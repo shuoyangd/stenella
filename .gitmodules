@@ -1,3 +1,6 @@
 [submodule "fairseq"]
 	path = fairseq
 	url = https://github.com/shuoyangd/fairseq
+[submodule "data"]
+	path = data
+	url = https://github.com/sheffieldnlp/mlqe-pe
