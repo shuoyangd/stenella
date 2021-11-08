@@ -1,0 +1,201 @@
+# using my fork for now, as fairseq evolves pretty fast
+package fairseq
+    # :: .versioner=git .repo="https://github.com/shuoyangd/fairseq" .ref=dev0101 {
+    :: .versioner=disk .path="/home/v-shuding/nat/fairseq" {
+
+  python setup.py build develop
+}
+
+package qe_eval_scripts
+    :: .versioner=git .repo="https://github.com/sheffieldnlp/qe-eval-scripts" .ref=HEAD { }
+
+package subword_nmt :: .versioner=pip .package="subword-nmt" .tag="0.3.5" { }
+
+package sentencepiece :: .versioner=git .repo="https://github.com/google/sentencepiece" .ref="tags/v0.1.5" {  # v0.1.6 throws segfault
+  mkdir build
+  cd build
+  cmake ..
+  make -j $(nproc)
+}
+
+package sacremoses :: .versioner=pip .package="sacremoses" .tag="0.0.43" { }
+package helper_scripts :: .versioner=disk .path="/home/v-shuding/bidir-qe/scripts" { }
+package mosesdecoder :: .versioner=git .repo="https://github.com/moses-smt/mosesdecoder" .ref=HEAD { }
+
+package fastBPE
+    :: .versioner=git .repo="https://github.com/glample/fastBPE" .ref=HEAD {
+
+  g++ -std=c++11 -pthread -O3 fastBPE/main.cc -IfastBPE -o fast
+}
+
+global {
+  # ducttape_output="out_ende_wmt20_pretrain"
+  ducttape_output="out_ende_wmt20_pretrain_m2m_heu_kd_petags_newcp"
+  stage2_finetune=(TrainDevDataSection:
+    train=(side:
+      src=(DiffKD:
+        no="/home/v-shuding/nat/exps/nat_big_train/train_kd/kd_data/kd.debpe.en"
+        yes="/home/v-shuding/nat/exps/three-stage/kd_diff_data_copy/kd.diff.debpe.en"
+      )
+      tgt=(DiffKD:
+        no="/home/v-shuding/nat/exps/nat_big_train/train_kd/kd_data/kd.debpe.de"
+        yes="/home/v-shuding/nat/exps/three-stage/kd_diff_data_copy/kd.diff.debpe.de"
+      )
+      pe=(DiffKD:
+        no="/home/v-shuding/nat/exps/nat_big_train/train_kd/kd_data/kd.debpe.pe"
+        yes="/home/v-shuding/nat/exps/three-stage/kd_diff_data_copy/kd.diff.debpe.pe"
+      )
+    )
+    valid=(side:
+      src="/home/v-shuding/nat/mlqe-pe/data/post-editing/dev/en-de-dev/dev.src"
+      tgt="/home/v-shuding/nat/mlqe-pe/data/post-editing/dev/en-de-dev/dev.mt"
+      pe="/home/v-shuding/nat/mlqe-pe/data/post-editing/dev/en-de-dev/dev.pe"
+    )
+  )
+
+  stage3_finetune=(TrainDevDataSection:
+    train=(Depre:
+      no=(side:
+        src="/home/v-shuding/nat/mlqe-pe/data/post-editing/train/en-de-train/train.src"
+        tgt="/home/v-shuding/nat/mlqe-pe/data/post-editing/train/en-de-train/train.mt"
+        pe="/home/v-shuding/nat/mlqe-pe/data/post-editing/train/en-de-train/train.pe"
+      )
+      yes=(side:
+        src="/home/v-shuding/nat/mlqe-pe/data/post-editing/train/en-de-train-depre/train.src"
+        tgt="/home/v-shuding/nat/mlqe-pe/data/post-editing/train/en-de-train-depre/train.mt"
+        pe="/home/v-shuding/nat/mlqe-pe/data/post-editing/train/en-de-train-depre/train.pe"
+      )
+    )
+    valid=(Depre:
+      no=(side:
+        src="/home/v-shuding/nat/mlqe-pe/data/post-editing/dev/en-de-dev/dev.src"
+        tgt="/home/v-shuding/nat/mlqe-pe/data/post-editing/dev/en-de-dev/dev.mt"
+        pe="/home/v-shuding/nat/mlqe-pe/data/post-editing/dev/en-de-dev/dev.pe"
+      )
+      yes=(side:
+        src="/home/v-shuding/nat/mlqe-pe/data/post-editing/dev/en-de-dev-depre/dev.src"
+        tgt="/home/v-shuding/nat/mlqe-pe/data/post-editing/dev/en-de-dev-depre/dev.mt"
+        pe="/home/v-shuding/nat/mlqe-pe/data/post-editing/dev/en-de-dev-depre/dev.pe"
+      )
+    )
+  )
+
+  # this should be tokenized but not bpe-ed text
+  test_data_word_level=(side:
+    src="/home/v-shuding/nat/mlqe-pe/data/post-editing/test/en-de-test20/test20.src"
+    tgt="/home/v-shuding/nat/mlqe-pe/data/post-editing/test/en-de-test20/test20.mt"
+    pe="/home/v-shuding/nat/mlqe-pe/data/post-editing/test/en-de-test20/test20.pe"
+  )
+
+  blind_test_data_word_level=(side:
+    src="/home/v-shuding/nat/mlqe-pe/data/test21/en-de-test21/test21.tok.src"
+    tgt="/home/v-shuding/nat/mlqe-pe/data/test21/en-de-test21/test21.tok.mt"
+    pe=""
+  )
+
+  # official tag from the eval data
+  official_tags=(Depre:
+    no="/home/v-shuding/nat/mlqe-pe/data/post-editing/test/en-de-test20/test20.tags"
+    yes="/home/v-shuding/nat/mlqe-pe/data/post-editing/test/en-de-test20-depre/test20.tags"
+  )
+
+  official_dev_tags=(Depre:
+    no="/home/v-shuding/nat/mlqe-pe/data/post-editing/dev/en-de-dev/dev.tags"
+    yes="/home/v-shuding/nat/mlqe-pe/data/post-editing/dev/en-de-dev-depre/dev.tags"
+  )
+
+  # same data as what original paper used
+  # checkpoint="/home/v-shuding/nat/exps/nat_train/lev_dry/train_philly/Baseline.baseline/out/checkpoint.best_loss_3.72.pt"
+  # checkpoint="/home/v-shuding/nat/exps/nat_big_train/train/lev_dry/train_philly/Baseline.baseline/out/checkpoint_best.pt"
+  checkpoint=(DoPretrain:
+    yes=(Arch:
+      small=(Detokenize:
+        no=(DoKD:
+          yes="/home/v-shuding/nat/checkpoint.best_loss_5.14.pt"
+          no=""
+        )
+        yes=""
+      )
+      mid=""
+    )
+    no=(Arch:
+      small="/home/v-shuding/m2m/418M_to_levT_ee_12_12_12.pt"
+      mid="/home/v-shuding/m2m/1.2B_to_levT_ee_24_24_24.pt"
+    )
+    at=(Arch:
+      small="/home/v-shuding/nat/checkpoint_at_ende.pt"
+      mid=""
+    )
+  )
+
+  # sentencepiece model for the model w/ paracrawl
+  bpe_method="sentencepiece"
+  sp_model=""
+  sp_vocab=""
+  # nat_bpe_model="/home/v-shuding/nat/exps/nat_big_train/preprocess/out/train_bpe/DoTruecase.no+MergeTest.yes/bpe.model"
+  nat_bpe_model="/home/v-shuding/m2m/spm.128k.model"
+  # dict_src="/home/shuoyangd/projects/bidir_qe/exps/nmt-train2/out_eten/binarize_data/SgmDev.yes/out/dict.et.txt"
+  # dict_tgt="/home/shuoyangd/projects/bidir_qe/exps/nmt-train2/out_eten/binarize_data/SgmDev.yes/out/dict.en.txt"
+  dict_src="/home/v-shuding/m2m/model_dict.128k.txt"
+  dict_tgt="/home/v-shuding/m2m/model_dict.128k.txt"
+  mcd_rate=(MCDRate: 0.0 0.3)
+  mcd_samples=(MCDSamples: 1 30)
+  macrof1_threshold=(MacroF1Threshold: 0.5)
+  stage2_update_word_ins=(Stage2UpdateWordIns: no yes)
+  stage2_interp_masking=(Stage2InterpMasking: no yes)
+  stage3_update_word_ins=(Stage3UpdateWordIns: no yes)
+  stage3_interp_masking=(Stage3InterpMasking: no yes)
+  stage2_mask_ins_lb_factor=(Stage2LbFactor:
+    def="" lee="0.25"
+  )
+  stage2_word_del_lb_factor=(Stage2LbFactor:
+    def="" lee="0.25"
+  )
+  stage3_mask_ins_lb_factor=(Stage3LbFactor:
+    def="" lee="0.25"
+  )
+  stage3_word_del_lb_factor=(Stage3LbFactor:
+    def="" lee="0.25"
+  )
+  stage3_mask_ins_factor=""
+  finetune_lr=(LR: 2e-5 5e-6)
+  finetune_lr_scheduler=(Scheduler:
+    def="inverse_sqrt"
+    no=""
+  )
+  stage2_warmup_updates=(Warmup:
+    def="10000"
+    no=""
+  )
+  stage3_warmup_updates=(Warmup:
+    def="2000"
+    no=""
+  )
+
+  SRC="en"
+  TRG="de"
+  arch=(Arch:
+    small="levenshtein_transformer_m2m_small"
+    mid="levenshtein_transformer_m2m"
+  )
+  early_exit=(Arch:
+    small="12,12,12"
+    mid="24,24,24"
+  )
+
+  disk_footprint=(Arch:
+    small="6863178235"
+    mid="15930441113"
+  )
+  num_params=(Arch:
+    small="484431872"
+    mid="1239996416"
+  )
+  method_name=(Ensemble:
+    no="LevT_single"
+    yes="LevT_ensemble"
+  )
+
+  # All ducttape files will be written underneath this directory
+  pyenv="/home/v-shuding/pyenv/py3t/bin/activate"
+}
