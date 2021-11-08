@@ -24,11 +24,6 @@ We assume that `$BASE` is the path of this repository in your system.
 ```bash
 BASE=/path/to/repo
 
-# pull the data
-git clone https://github.com/sheffieldnlp/mlqe-pe data
-cd data
-git checkout v1.0.0
-
 # untar some data
 cd $BASE/data/data/post-editing/train
 tar -zxvf en-de-train.tar.gz
@@ -66,7 +61,7 @@ wget https://www.cs.jhu.edu/~sding/downloads/emnlp2021/emnlp2021-en-de-best.pt
 Open `run.sh`, update the value of `BASE` to the path where you stored your repo.
 
 Then, simply running `bash run.sh` should reproduce the best en-de result for you.
-You can configure `$checkpoint`, `$src` and `$tgt` to reproduce the other results built from the M2M model. 
+You can configure `checkpoint`, `src` and `tgt` to reproduce the other results built from the M2M model. 
 
 ## Reference 
 

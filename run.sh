@@ -7,8 +7,7 @@
 #
 
 # EDIT THIS BEFORE YOU RUN IT
-# BASE=/path/to/this/repo
-BASE=/export/c11/shuoyangd/projects/stenella
+BASE=/path/to/this/repo
 helper_scripts=$BASE/scripts
 src=en
 tgt=de
